@@ -1,0 +1,27 @@
+# Microchip Libero SoC build artifacts
+*.log
+*.rpt
+*.srr
+*.edn
+*.vm
+*.vqm
+component/
+synthesis/
+designer/
+simulation/
+
+# SoftConsole / RISC-V build artifacts
+Debug/
+Release/
+*.elf
+*.bin
+*.hex
+*.o
+*.d
+
+# Python / OS artifacts
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.tmp

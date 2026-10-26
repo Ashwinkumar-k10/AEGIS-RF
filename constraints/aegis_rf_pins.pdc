@@ -1,0 +1,26 @@
+# ==============================================================================
+# AEGIS-RF: Microchip PolarFire SoC Libero Physical Constraints (PDC)
+# Target Kit: PolarFire SoC Icicle Kit (MPFS250T-FCVG484E)
+# Reference: Icicle Kit Rev 1.0 Schematics (DVP-102-000536-001)
+# ==============================================================================
+
+# System Clocks & Resets
+set_io -port_name {REF_CLK_50MHZ} -pin_name W12 -fixed true -io_std LVCMOS33
+set_io -port_name {rst_n}          -pin_name V19 -fixed true -io_std LVCMOS33
+
+# User Status LEDs (Mode & Fault Indications)
+# LD1: Mode 1 Quiescent (Green) | LD2: Mode 2 Tracking (Amber) | LD3: Mode 3 Alert (Red) | LD4: DMA Heartbeat
+set_io -port_name {led_mode[0]}    -pin_name V14 -fixed true -io_std LVCMOS33 ;# LD1
+set_io -port_name {led_mode[1]}    -pin_name U13 -fixed true -io_std LVCMOS33 ;# LD2
+set_io -port_name {led_mode[2]}    -pin_name T12 -fixed true -io_std LVCMOS33 ;# LD3
+set_io -port_name {led_heartbeat}  -pin_name V15 -fixed true -io_std LVCMOS33 ;# LD4
+
+# User Tactile Pushbuttons (Manual Interference Injection / Mode Override)
+set_io -port_name {btn_override[0]} -pin_name Y13 -fixed true -io_std LVCMOS33 ;# SW1
+set_io -port_name {btn_override[1]} -pin_name W13 -fixed true -io_std LVCMOS33 ;# SW2
+set_io -port_name {btn_override[2]} -pin_name Y14 -fixed true -io_std LVCMOS33 ;# SW3
+set_io -port_name {btn_override[3]} -pin_name AA14 -fixed true -io_std LVCMOS33 ;# SW4
+
+# Dedicated Interrupt Line from Fabric to RISC-V MSS (Buffer Complete / Error IRQ)
+set_io -port_name {irq_dma_complete} -pin_name AA19 -fixed true -io_std LVCMOS33
+set_io -port_name {irq_overflow_err} -pin_name AA20 -fixed true -io_std LVCMOS33

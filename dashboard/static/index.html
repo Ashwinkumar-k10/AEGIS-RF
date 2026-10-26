@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS-RF | Real-Time Spectrum Intelligence Dashboard</title>
+    <style>
+        :root {
+            --bg-base: #0a0e17;
+            --bg-card: #121826;
+            --bg-card-hover: #182235;
+            --border: #202b3d;
+            --primary: #00d2ff;
+            --primary-glow: rgba(0, 210, 255, 0.25);
+            --mode1: #00e676;
+            --mode2: #ffab00;
+            --mode3: #ff1744;
+            --text-main: #e2e8f0;
+            --text-dim: #8899ac;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .title-group h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        .title-group h1 span {
+            color: var(--primary);
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .badge-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+
+        .pill.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2.5fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        #spectrum-canvas {
+            width: 100%;
+            height: 380px;
+            background: #060910;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .side-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mode-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px;
+            border-radius: 6px;
+            background: #0d131f;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .mode-indicator {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .mode-led {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #444;
+        }
+
+        .mode-0 .mode-led { background: var(--mode1); box-shadow: 0 0 12px var(--mode1); }
+        .mode-1 .mode-led { background: var(--mode2); box-shadow: 0 0 12px var(--mode2); }
+        .mode-2 .mode-led { background: var(--mode3); box-shadow: 0 0 12px var(--mode3); }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #1c2738;
+            font-size: 13px;
+        }
+
+        .metric-val {
+            font-weight: 600;
+            font-family: "Courier New", monospace;
+            color: var(--primary);
+        }
+
+        .gauge-bar-bg {
+            background: #182233;
+            border-radius: 4px;
+            height: 10px;
+            width: 100%;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .gauge-bar-fill {
+            background: linear-gradient(90deg, #00d2ff, #ffab00, #ff1744);
+            height: 100%;
+            width: 28%;
+            transition: width 0.2s ease;
+        }
+
+        .power-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .power-cell {
+            background: #0b111a;
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .power-cell-title {
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .power-cell-val {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title-group">
+            <h1>AEGIS-<span>RF</span> // Spectrum Intelligence</h1>
+            <div class="subtitle">PolarFire® SoC Icicle Kit (MPFS250T) | FPGA DSP Fast-Loop + Hard RISC-V Linux Supervisory</div>
+        </div>
+        <div class="badge-bar">
+            <div class="pill active">● STREAMING 100 MHz</div>
+            <div class="pill">FIXED 2048 CoreFFT</div>
+            <div class="pill">PAC1934 ACTIVE</div>
+        </div>
+    </header>
+
+    <div class="grid">
+        <div class="card">
+            <div class="card-title">
+                <span>Real-Time Spectrum Power & CA-CFAR Threshold</span>
+                <span id="frame-info">Frame: #1000 | 100.0 MSps</span>
+            </div>
+            <canvas id="spectrum-canvas" width="900" height="380"></canvas>
+            <div style="display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:var(--text-dim);">
+                <span>0.0 MHz (Bin 0)</span>
+                <span>Sub-Band Window: <strong id="subband-span" style="color:var(--primary);">256 Bins</strong></span>
+                <span>100.0 MHz (Bin 2047)</span>
+            </div>
+        </div>
+
+        <div class="side-stack">
+            <!-- Mode Card -->
+            <div class="card">
+                <div class="card-title">Supervisory FSM State</div>
+                <div class="mode-box mode-0" id="mode-box">
+                    <div>
+                        <div class="mode-indicator" id="mode-name">Mode 1: Quiescent</div>
+                        <div style="font-size:12px; color:var(--text-dim); margin-top:4px;">Anti-Flapping Dwell: Active</div>
+                    </div>
+                    <div class="mode-led"></div>
+                </div>
+            </div>
+
+            <!-- Confidence Metric Card -->
+            <div class="card">
+                <div class="card-title">Confidence Metric (C_det)</div>
+                <div class="metric-row">
+                    <span>Confidence Score</span>
+                    <span class="metric-val" id="conf-val">0.280</span>
+                </div>
+                <div class="gauge-bar-bg">
+                    <div class="gauge-bar-fill" id="conf-bar" style="width: 28%;"></div>
+                </div>
+                <div class="metric-row" style="margin-top: 10px;">
+                    <span>Peak-to-Noise Ratio (PNR)</span>
+                    <span class="metric-val" id="pnr-val">+4.2 dB</span>
+                </div>
+                <div class="metric-row">
+                    <span>Candidates Detected</span>
+                    <span class="metric-val" id="cand-val">0</span>
+                </div>
+            </div>
+
+            <!-- PAC1934 Telemetry Card -->
+            <div class="card">
+                <div class="card-title">PAC1934 Hardware Power Rails</div>
+                <div class="power-grid">
+                    <div class="power-cell">
+                        <div class="power-cell-title">VDD 1.0V Core</div>
+                        <div class="power-cell-val" id="pwr-vdd">780 mW</div>
+                    </div>
+                    <div class="power-cell">
+                        <div class="power-cell-title">VDD25 2.5V</div>
+                        <div class="power-cell-val" id="pwr-vdd25">320 mW</div>
+                    </div>
+                    <div class="power-cell">
+                        <div class="power-cell-title">VDDA25 / VDDA</div>
+                        <div class="power-cell-val" id="pwr-vdda">327 mW</div>
+                    </div>
+                    <div class="power-cell">
+                        <div class="power-cell-title">Total Measured</div>
+                        <div class="power-cell-val" id="pwr-total" style="color:var(--primary);">1.43 W</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("spectrum-canvas");
+        const ctx = canvas.getContext("2d");
+
+        function drawSpectrum(spectrum, cfar) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid lines
+            ctx.strokeStyle = "#151e2d";
+            ctx.lineWidth = 1;
+            for (let y = 40; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw Spectrum
+            ctx.beginPath();
+            ctx.strokeStyle = "#00d2ff";
+            ctx.lineWidth = 1.5;
+            const step = canvas.width / (spectrum.length - 1);
+            
+            spectrum.forEach((val, i) => {
+                // Map -100 dBm to 0 dBm -> canvas.height to 20
+                const y = canvas.height - ((val + 100) / 100) * (canvas.height - 30);
+                if (i === 0) ctx.moveTo(0, y);
+                else ctx.lineTo(i * step, y);
+            });
+            ctx.stroke();
+
+            // Draw CA-CFAR Threshold Line
+            ctx.beginPath();
+            ctx.strokeStyle = "#ffab00";
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 4]);
+            cfar.forEach((val, i) => {
+                const y = canvas.height - ((val + 100) / 100) * (canvas.height - 30);
+                if (i === 0) ctx.moveTo(0, y);
+                else ctx.lineTo(i * step, y);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        async function fetchTelemetry() {
+            try {
+                const res = await fetch("/api/telemetry");
+                const data = await res.json();
+
+                // Update text fields
+                document.getElementById("frame-info").innerText = `Frame: #${data.frame_id} | Monotonic`;
+                document.getElementById("mode-name").innerText = data.mode_name;
+                document.getElementById("subband-span").innerText = `${data.analysis_span} Bins`;
+                document.getElementById("conf-val").innerText = data.confidence.toFixed(3);
+                document.getElementById("conf-bar").style.width = `${Math.min(100, data.confidence * 100)}%`;
+                document.getElementById("pnr-val").innerText = `+${data.pnr_db} dB`;
+                document.getElementById("cand-val").innerText = data.candidates;
+
+                // Mode box class
+                const modeBox = document.getElementById("mode-box");
+                modeBox.className = `mode-box mode-${data.mode}`;
+
+                // PAC1934
+                document.getElementById("pwr-vdd").innerText = `${data.pac1934.vdd_core_mw} mW`;
+                document.getElementById("pwr-vdd25").innerText = `${data.pac1934.vdd25_mw} mW`;
+                document.getElementById("pwr-vdda").innerText = `${(data.pac1934.vdda25_mw + data.pac1934.vdda_mw).toFixed(1)} mW`;
+                document.getElementById("pwr-total").innerText = `${(data.pac1934.total_mw / 1000).toFixed(2)} W`;
+
+                // Draw Plot
+                drawSpectrum(data.spectrum, data.cfar);
+            } catch (e) {
+                console.error("Telemetry fetch error:", e);
+            }
+        }
+
+        // Poll at 10 Hz
+        setInterval(fetchTelemetry, 100);
+        fetchTelemetry();
+    </script>
+</body>
+</html>
